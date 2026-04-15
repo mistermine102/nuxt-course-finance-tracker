@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
-import type { Tables } from '~/types/database.types'
+import type { Database, Tables } from '~/types/database.types'
 import { formatTime } from '~/utils/formatDateTime'
 
 interface Props {
@@ -8,6 +8,12 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const emit = defineEmits<{
+  deleted: []
+}>()
+const supabase = useSupabaseClient<Database>()
+const toast = useToast()
+const loading = ref(false)
 
 const isIncome = computed(() => props.transaction.type === 'Income')
 const icon = computed(() => isIncome.value ? 'i-heroicons-arrow-up-right' : 'i-heroicons-arrow-down-left')
@@ -18,7 +24,37 @@ const formattedTime = computed(() => formatTime(props.transaction.created_at))
 
 const { currency } = useCurrency(amount)
 
-const items: DropdownMenuItem[][] = [
+const deleteTransaction = async () => {
+  if (loading.value) return
+
+  loading.value = true
+
+  const { error } = await supabase
+    .from('Transactions')
+    .delete()
+    .eq('id', props.transaction.id)
+
+  loading.value = false
+
+  if (error) {
+    toast.add({
+      title: 'Could not delete transaction',
+      description: error.message,
+      color: 'error'
+    })
+    return
+  }
+
+  toast.add({
+    title: 'Transaction deleted',
+    description: props.transaction.description ?? 'The selected transaction was removed.',
+    color: 'success'
+  })
+
+  emit('deleted')
+}
+
+const items = computed<DropdownMenuItem[][]>(() => [
   [
     {
       label: 'Edit',
@@ -28,10 +64,11 @@ const items: DropdownMenuItem[][] = [
     {
       label: 'Delete',
       icon: 'i-heroicons-trash-20-solid',
-      onSelect: () => console.log('Delete')
+      disabled: loading.value,
+      onSelect: deleteTransaction
     }
   ]
-]
+])
 </script>
 
 <template>
@@ -55,7 +92,7 @@ const items: DropdownMenuItem[][] = [
     <!-- Right: Options -->
     <div class="flex items-center sm:justify-end">
       <UDropdownMenu :items="items" :content="{ align: 'end' }">
-        <UButton color="neutral" variant="ghost" trailing-icon="i-heroicons-ellipsis-horizontal" :loading="false" />
+        <UButton color="neutral" variant="ghost" trailing-icon="i-heroicons-ellipsis-horizontal" :loading="loading" :disabled="loading" />
       </UDropdownMenu>
     </div>
     
