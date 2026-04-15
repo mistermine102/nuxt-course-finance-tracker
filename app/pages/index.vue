@@ -14,11 +14,17 @@
         <Trend title="Investments" :amount="200" :lastAmount="150" color="green" />
         <Trend title="Savings" :amount="300" :lastAmount="300" color="green" :loading="true" />
     </section>
+    <section>
+        <Transaction description="Salary" category="Income" :amount="5000" />
+        <Transaction description="Groceries" category="Food" :amount="-120" />
+        <Transaction description="Netflix" category="Entertainment" :amount="-15" />
+    </section>
   </UContainer>
 </template>
 
 <script setup lang="ts">
 import Trend from '~/components/Trend.vue';
+import Transaction from '~/components/Transaction.vue';
 import { transactionViewOptions } from '~/constants'
 
 const selected = ref(transactionViewOptions[1]) // Default to Monthly

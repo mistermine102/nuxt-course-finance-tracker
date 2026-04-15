@@ -12,6 +12,8 @@ const trendPercentage = computed(() => {
   return Math.ceil(((props.amount - props.lastAmount) / props.lastAmount) * 100)
 })
 
+const { currency } = useCurrency(props.amount)
+
 const icon = computed(() => trendPercentage.value >= 0 ? 'i-heroicons-arrow-trending-up' : 'i-heroicons-arrow-trending-down')
 
 const colorClass = computed(() => {
@@ -26,7 +28,7 @@ const colorClass = computed(() => {
 
         <div class="text-2xl font-extrabold text-black dark:text-white mb-2">
             <USkeleton class="h-8 w-full" v-if="loading"/>
-            <div v-else>{{amount}}</div>
+            <div v-else>{{currency}}</div>
         </div>
 
         <div class="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
