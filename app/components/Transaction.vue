@@ -1,19 +1,22 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
+import type { Tables } from '~/types/database.types'
+import { formatTime } from '~/utils/formatDateTime'
 
-const props = defineProps({
-  description: String,
-  amount: Number,
-  category: String
-})
+interface Props {
+  transaction: Tables<'Transactions'>
+}
 
-const isIncome = computed(() => (props.amount || 0) >= 0)
+const props = defineProps<Props>()
+
+const isIncome = computed(() => props.transaction.type === 'Income')
 const icon = computed(() => isIncome.value ? 'i-heroicons-arrow-up-right' : 'i-heroicons-arrow-down-left')
 const iconColor = computed(() => isIncome.value ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400')
 
+const amount = computed(() => props.transaction.amount)
+const formattedTime = computed(() => formatTime(props.transaction.created_at))
 
-
-const { currency } = useCurrency(toRef(props, 'amount'))
+const { currency } = useCurrency(amount)
 
 const items: DropdownMenuItem[][] = [
   [
@@ -37,8 +40,11 @@ const items: DropdownMenuItem[][] = [
     <!-- Left: Desc and Category -->
     <div class="flex items-center space-x-3">
       <UIcon :name="icon" :class="[iconColor]" class="w-5 h-5 flex-shrink-0" />
-      <div class="truncate">{{ description }}</div>
-      <UBadge color="neutral">{{ category }}</UBadge>
+      <div class="min-w-0">
+        <div class="truncate">{{ transaction.description }}</div>
+        <div class="text-xs text-gray-500 dark:text-gray-400">{{ formattedTime }}</div>
+      </div>
+      <UBadge color="neutral">{{ transaction.category }}</UBadge>
     </div>
 
     <!-- Middle: Amount -->
