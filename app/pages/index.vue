@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AddTransactionModal from '~/components/AddTransactionModal.vue';
 import DailySummary from '~/components/DailySummary.vue';
 import Trend from '~/components/Trend.vue';
 import Transaction from '~/components/Transaction.vue';
@@ -67,6 +68,7 @@ const expenseTotal = computed(() => {
 })
 
 const selected = ref(transactionViewOptions[1]) // Default to Monthly
+const isAddModalOpen = ref(false)
 
 </script>
 
@@ -90,8 +92,14 @@ const selected = ref(transactionViewOptions[1]) // Default to Monthly
     </section>
     <section>
       <div class="flex justify-end mb-4">
-        <UButton color="primary" icon="i-heroicons-plus" label="Add" />
+        <UButton
+          color="primary"
+          icon="i-heroicons-plus"
+          label="Add"
+          @click="isAddModalOpen = true"
+        />
       </div>
+      <AddTransactionModal v-model:open="isAddModalOpen" />
       <div v-if="pending" class="space-y-6">
         <div v-for="index in 3" :key="index" class="mb-6">
           <div class="flex items-center justify-between mb-4">
