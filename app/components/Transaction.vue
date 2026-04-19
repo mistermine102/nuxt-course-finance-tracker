@@ -72,29 +72,26 @@ const items = computed<DropdownMenuItem[][]>(() => [
 </script>
 
 <template>
-  <div class="grid grid-cols-1 sm:grid-cols-3 py-4 border-b border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-100 items-center gap-4 sm:gap-0">
-    
-    <!-- Left: Desc and Category -->
-    <div class="flex items-center space-x-3">
+  <div class="grid grid-cols-1 gap-4 py-4 border-b border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-100 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-6">
+    <div class="grid min-w-0 items-start gap-3 sm:grid-cols-[auto_minmax(0,1fr)]">
       <UIcon :name="icon" :class="[iconColor]" class="w-5 h-5 flex-shrink-0" />
-      <div class="min-w-0">
-        <div class="truncate">{{ transaction.description }}</div>
+      <div class="grid min-w-0 gap-1">
+        <div class="flex min-w-0 flex-wrap items-start gap-2">
+          <div class="min-w-0 flex-1 whitespace-normal break-words leading-5">{{ transaction.description }}</div>
+          <UBadge v-if="transaction.category" color="neutral">{{ transaction.category }}</UBadge>
+        </div>
         <div class="text-xs text-gray-500 dark:text-gray-400">{{ formattedTime }}</div>
       </div>
-      <UBadge color="neutral">{{ transaction.category }}</UBadge>
     </div>
 
-    <!-- Middle: Amount -->
-    <div class="flex items-center sm:justify-center font-medium">
+    <div class="font-medium sm:justify-self-end sm:text-right">
       {{ currency }}
     </div>
 
-    <!-- Right: Options -->
-    <div class="flex items-center sm:justify-end">
+    <div class="flex items-center sm:justify-self-end">
       <UDropdownMenu :items="items" :content="{ align: 'end' }">
         <UButton color="neutral" variant="ghost" trailing-icon="i-heroicons-ellipsis-horizontal" :loading="loading" :disabled="loading" />
       </UDropdownMenu>
     </div>
-    
   </div>
 </template>

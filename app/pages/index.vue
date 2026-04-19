@@ -19,6 +19,7 @@ const { data: transactions, pending, refresh } = await useAsyncData('transaction
   const { data, error } = await supabase
     .from('Transactions')
     .select()
+    .order('created_at', {ascending: false})
 
     if(error) return []
 
