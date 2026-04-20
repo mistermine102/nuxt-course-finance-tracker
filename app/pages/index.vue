@@ -3,74 +3,29 @@ import AddTransactionModal from '~/components/AddTransactionModal.vue';
 import DailySummary from '~/components/DailySummary.vue';
 import Trend from '~/components/Trend.vue';
 import Transaction from '~/components/Transaction.vue';
-import type { Database, Tables } from '~/types/database.types'
 import { transactionViewOptions } from '~/constants'
 
-type TransactionRow = Tables<'Transactions'>
-type TransactionGroup = {
-  amount: number
-  date: string
-  transactions: TransactionRow[]
-}
-
-const supabase = useSupabaseClient<Database>()
-
-const { data: transactions, pending, refresh } = await useAsyncData('transactions', async () => {
-  const { data, error } = await supabase
-    .from('Transactions')
-    .select()
-    .order('created_at', {ascending: false})
-
-    if(error) return []
-
-    return data
-})
-
-const groupedTransactions = computed(() => {
-  if (!transactions.value) return []
-
-  const grouped = transactions.value.reduce<Record<string, TransactionRow[]>>((acc, transaction) => {
-    const key = transaction.created_at.slice(0, 10)
-
-    acc[key] ??= []
-    acc[key].push(transaction)
-
-    return acc
-  }, {})
-
-  return Object.entries(grouped).map(([date, transactions]) => ({
-    date,
-    amount: transactions.reduce((sum, transaction) => {
-      const amount = transaction.amount ?? 0
-      return transaction.type === 'Income' ? sum + amount : sum - amount
-    }, 0),
-    transactions
-  })) satisfies TransactionGroup[]
-})
-
-const incomes = computed(() => {
-  return (transactions.value ?? []).filter(transaction => transaction.type === 'Income')
-})
-
-const expenses = computed(() => {
-  return (transactions.value ?? []).filter(transaction => transaction.type === 'Expense')
-})
-
-const incomeTotal = computed(() => {
-  return incomes.value.reduce((sum, transaction) => {
-    return sum + (transaction.amount ?? 0)
-  }, 0)
-})
-
-const expenseTotal = computed(() => {
-  return expenses.value.reduce((sum, transaction) => {
-    return sum + (transaction.amount ?? 0)
-  }, 0)
-})
-
 const selected = ref(transactionViewOptions[1]) // Default to Monthly
+
+const {
+  pending,
+  refresh,
+  groupedTransactions,
+  incomeTotal,
+  expenseTotal,
+  investmentTotal,
+  savingTotal,
+  previousIncomeTotal,
+  previousExpenseTotal,
+  previousInvestmentTotal,
+  previousSavingTotal
+} = useTransactions(selected)
+
 const isAddModalOpen = ref(false)
 
+async function handleTransactionAdded() {
+  await refresh()
+}
 </script>
 
 <template>
@@ -86,10 +41,10 @@ const isAddModalOpen = ref(false)
       </div>
     </section>
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:gap-16 mb-8">
-      <Trend title="Income" :amount="incomeTotal" :lastAmount="0" color="green" :loading="pending" />
-      <Trend title="Expense" :amount="expenseTotal" :lastAmount="0" color="red" :loading="pending" />
-      <Trend title="Investments" :amount="200" :lastAmount="150" color="green" :loading="pending" />
-      <Trend title="Savings" :amount="300" :lastAmount="300" color="green" :loading="pending" />
+      <Trend title="Income" :amount="incomeTotal" :lastAmount="previousIncomeTotal" color="green" :loading="pending" />
+      <Trend title="Expense" :amount="expenseTotal" :lastAmount="previousExpenseTotal" color="red" :loading="pending" />
+      <Trend title="Investments" :amount="investmentTotal" :lastAmount="previousInvestmentTotal" color="green" :loading="pending" />
+      <Trend title="Savings" :amount="savingTotal" :lastAmount="previousSavingTotal" color="green" :loading="pending" />
     </section>
     <section>
       <div class="flex justify-end mb-4">
@@ -100,7 +55,7 @@ const isAddModalOpen = ref(false)
           @click="isAddModalOpen = true"
         />
       </div>
-      <AddTransactionModal v-model:open="isAddModalOpen" />
+      <AddTransactionModal v-model:open="isAddModalOpen" @transaction-added="handleTransactionAdded" />
       <div v-if="pending" class="space-y-6">
         <div v-for="index in 3" :key="index" class="mb-6">
           <div class="flex items-center justify-between mb-4">

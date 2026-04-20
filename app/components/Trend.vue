@@ -12,7 +12,7 @@ const trendPercentage = computed(() => {
   return Math.ceil(((props.amount - props.lastAmount) / props.lastAmount) * 100)
 })
 
-const { currency } = useCurrency(props.amount)
+const { currency } = useCurrency(toRef(props, 'amount'))
 
 const icon = computed(() => trendPercentage.value >= 0 ? 'i-heroicons-arrow-trending-up' : 'i-heroicons-arrow-trending-down')
 

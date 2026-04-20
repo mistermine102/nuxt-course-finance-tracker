@@ -1,44 +1,28 @@
 <script setup lang="ts">
 import { categories, types } from '~/constants'
-import { z } from 'zod'
+import { transactionSchema, createTransactionFormState } from '~/composables/useTransactions'
+import type { TablesInsert } from '~/types/database.types'
 
-const baseSchema = z.object({
-  amount: z.number('Amount must be a number').positive('Amount must be greater than 0'),
-  created_at: z.string().min(1, 'Transaction date is required'),
-  description: z.string().optional()
+const emit = defineEmits<{
+  transactionAdded: []
+}>()
+
+const state = ref(createTransactionFormState())
+const { addTransaction, isLoading } = useAddTransaction({
+  onSuccess: () => emit('transactionAdded')
 })
 
-const schema = z.intersection(
-  baseSchema,
-  z.discriminatedUnion('type', [
-    z.object({
-      type: z.literal('Expense'),
-      category: z.string().min(1, 'Category is required for expenses')
-    }),
-    z.object({
-      type: z.enum(['Income', 'Saving', 'Investment']),
-      category: z.string().optional()
-    })
-  ], 'Transaction type is required')
-)
+async function save() {
+  const createdTransaction = await addTransaction(state.value as TablesInsert<'Transactions'>)
 
-type TransactionFormState = Partial<z.input<typeof schema>>
-
-const state = ref<TransactionFormState>({
-  type: undefined,
-  amount: 0,
-  created_at: '',
-  description: '',
-  category: ''
-})
-
-function save() {
-  console.log('SAVE FUNCTION RUNNING')
+  if (createdTransaction) {
+    state.value = createTransactionFormState()
+  }
 }
 </script>
 
 <template>
-  <UForm :state="state" :schema="schema" @submit="save">
+  <UForm :state="state" :schema="transactionSchema" @submit="save">
     <UFormField label="Transaction type" required name="type" class="mb-4">
       <USelect v-model="state.type" placeholder="Transaction type" :items="types" />
     </UFormField>
@@ -66,7 +50,7 @@ function save() {
     </UFormField>
 
     <div class="flex justify-end">
-      <UButton type="submit">
+      <UButton type="submit" :loading="isLoading" :disabled="isLoading">
         Save
       </UButton>
     </div>
