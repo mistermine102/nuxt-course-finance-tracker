@@ -1,15 +1,5 @@
 <script setup lang="ts">
 const user = useSupabaseUser()
-
-const avatarUrl = computed(() => {
-  const metadata = user.value?.user_metadata
-
-  return metadata?.avatar_url ?? metadata?.picture ?? null
-})
-
-const avatarAlt = computed(() => {
-  return user.value?.email ?? 'Current user avatar'
-})
 </script>
 
 <template>
@@ -27,11 +17,6 @@ const avatarAlt = computed(() => {
       Log in
     </UButton>
 
-    <UAvatar
-      v-else
-      :src="avatarUrl ?? undefined"
-      :alt="avatarAlt"
-      size="xl"
-    />
+    <UserAvatarMenu v-else :user="user" />
   </header>
 </template>

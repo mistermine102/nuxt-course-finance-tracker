@@ -104,7 +104,7 @@ async function main() {
 
   const supabaseUrl = requireEnv('NUXT_PUBLIC_SUPABASE_URL')
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? requireEnv('NUXT_PUBLIC_SUPABASE_KEY')
-  const count = Number(process.argv[2] ?? 250)
+  const count = Number(process.argv[2] ?? 50)
 
   if (!Number.isInteger(count) || count <= 0) {
     throw new Error('Seed count must be a positive integer.')
