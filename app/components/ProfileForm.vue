@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { User } from '@supabase/supabase-js'
+import type { JwtPayload } from '@supabase/auth-js'
 import type { Database } from '~/types/database.types'
 
+type ProfileUser = User | JwtPayload
+
 const props = defineProps<{
-  user: User
+  user: ProfileUser
 }>()
 
 const profileSchema = z.object({
@@ -15,15 +18,24 @@ const profileSchema = z.object({
 type ProfileFormState = z.input<typeof profileSchema>
 
 const supabase = useSupabaseClient<Database>()
+const currentUser = useSupabaseUser()
 const toast = useAppToast()
 
 const isLoading = ref(false)
-const currentUsername = (props.user.user_metadata?.username as string | undefined) ?? ''
 
-const state = ref<ProfileFormState>({
-  username: currentUsername,
-  email: props.user.email ?? ''
+const getProfileFormState = (user: ProfileUser): ProfileFormState => ({
+  username: typeof user.user_metadata?.username === 'string' ? user.user_metadata.username : '',
+  email: user.email ?? ''
 })
+
+const state = ref<ProfileFormState>(getProfileFormState(props.user))
+
+watch(
+  () => props.user,
+  (user) => {
+    state.value = getProfileFormState(user)
+  }
+)
 
 async function updateProfile() {
   if (isLoading.value) {
@@ -32,13 +44,15 @@ async function updateProfile() {
 
   try {
     isLoading.value = true
+    const username = state.value.username.trim()
+    const email = state.value.email.trim()
 
-    const { error } = await supabase.auth.updateUser(
+    const { data, error } = await supabase.auth.updateUser(
       {
-        email: state.value.email,
+        ...(email !== props.user.email ? { email } : {}),
         data: {
           ...props.user.user_metadata,
-          username: state.value.username
+          username
         }
       },
       { emailRedirectTo: `${window.location.origin}/auth/confirm` }
@@ -46,6 +60,18 @@ async function updateProfile() {
 
     if (error) {
       throw error
+    }
+
+    const { data: refreshedData } = await supabase.auth.getUser()
+    const updatedUser = refreshedData.user ?? data.user
+
+    if (updatedUser) {
+      currentUser.value = {
+        ...currentUser.value,
+        sub: updatedUser.id,
+        email: updatedUser.email,
+        user_metadata: updatedUser.user_metadata
+      } as typeof currentUser.value
     }
 
     toast.success({

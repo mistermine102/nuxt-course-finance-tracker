@@ -5,7 +5,7 @@ const user = useSupabaseUser()
 <template>
   <ProfileForm
     v-if="user"
-    :key="`${user.id}:${user.email ?? ''}:${(user.user_metadata?.username as string | undefined) ?? ''}`"
+    :key="`${user.sub}:${user.email ?? ''}:${(user.user_metadata?.username as string | undefined) ?? ''}`"
     :user="user"
   />
 
