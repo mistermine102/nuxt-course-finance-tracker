@@ -8,8 +8,12 @@ const props = defineProps<{
 }>()
 
 const supabase = useSupabaseClient<Database>()
-const toast = useToast()
+const toast = useAppToast()
 const isLoading = ref(false)
+
+const openSettings = async () => {
+  await navigateTo('/settings')
+}
 
 const logOut = async () => {
   try {
@@ -25,10 +29,9 @@ const logOut = async () => {
   } catch (error) {
     const description = error instanceof Error ? error.message : 'Could not log out.'
 
-    toast.add({
+    toast.error({
       title: 'Could not log out',
-      description,
-      color: 'error'
+      description
     })
   } finally {
     isLoading.value = false
@@ -46,7 +49,8 @@ const items = computed<DropdownMenuItem[][]>(() => [
     },
     {
       label: 'Settings',
-      icon: 'i-heroicons-cog-6-tooth'
+      icon: 'i-heroicons-cog-6-tooth',
+      onSelect: openSettings
     },
     {
       label: 'Log out',

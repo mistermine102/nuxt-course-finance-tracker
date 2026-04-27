@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { createClient } from '@supabase/supabase-js'
 
 const rootDir = process.cwd()
 
@@ -59,7 +60,7 @@ function randomDateWithinLastDays(days) {
   return date.toISOString()
 }
 
-function createTransaction() {
+function createTransaction(userId) {
   const type = randomItem(['Income', 'Expense', 'Saving', 'Investment'])
   const description = randomItem([
     'Monthly salary payment from primary full-time job',
@@ -84,59 +85,86 @@ function createTransaction() {
     category: type === 'Expense' ? randomItem(['Food', 'Housing', 'Car', 'Entertaiment']) : null,
     created_at: randomDateWithinLastDays(120),
     description,
-    type
+    type,
+    user_id: userId
   }
 }
 
-async function request(url, init) {
-  const response = await fetch(url, init)
+async function listUserIds(supabase) {
+  const users = []
+  const perPage = 1000
+  let page = 1
 
-  if (!response.ok) {
-    const body = await response.text()
-    throw new Error(`${response.status} ${response.statusText}: ${body}`)
+  while (true) {
+    const { data, error } = await supabase.auth.admin.listUsers({
+      page,
+      perPage
+    })
+
+    if (error) {
+      throw error
+    }
+
+    const pageUsers = data.users
+    users.push(...pageUsers)
+
+    if (pageUsers.length < perPage) {
+      break
+    }
+
+    page += 1
   }
 
-  return response
+  return users
+    .map(user => user.id)
+    .filter(userId => typeof userId === 'string' && userId.length > 0)
 }
 
 async function main() {
   await loadEnvFile()
 
   const supabaseUrl = requireEnv('NUXT_PUBLIC_SUPABASE_URL')
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? requireEnv('NUXT_PUBLIC_SUPABASE_KEY')
+  const supabaseKey = requireEnv('SUPABASE_SECRET')
   const count = Number(process.argv[2] ?? 50)
+  const supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
 
   if (!Number.isInteger(count) || count <= 0) {
     throw new Error('Seed count must be a positive integer.')
   }
 
-  const headers = {
-    apikey: supabaseKey,
-    Authorization: `Bearer ${supabaseKey}`
+  const userIds = await listUserIds(supabase)
+
+  if (userIds.length === 0) {
+    throw new Error('No Supabase auth users found. Create at least one user before seeding transactions.')
   }
 
-  const transactions = Array.from({ length: count }, createTransaction)
-  const endpoint = new URL('/rest/v1/Transactions', supabaseUrl)
+  const transactions = Array.from({ length: count }, (_, index) =>
+    createTransaction(userIds[index % userIds.length])
+  )
 
-  await request(`${endpoint}?id=not.is.null`, {
-    method: 'DELETE',
-    headers: {
-      ...headers,
-      Prefer: 'return=minimal'
-    }
-  })
+  const { error: deleteError } = await supabase
+    .from('Transactions')
+    .delete()
+    .not('id', 'is', null)
 
-  await request(endpoint, {
-    method: 'POST',
-    headers: {
-      ...headers,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal'
-    },
-    body: JSON.stringify(transactions)
-  })
+  if (deleteError) {
+    throw deleteError
+  }
 
-  console.log(`Seeded ${count} transactions.`)
+  const { error: insertError } = await supabase
+    .from('Transactions')
+    .insert(transactions)
+
+  if (insertError) {
+    throw insertError
+  }
+
+  console.log(`Seeded ${count} transactions for ${userIds.length} users.`)
 }
 
 main().catch((error) => {

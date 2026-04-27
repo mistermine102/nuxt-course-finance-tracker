@@ -12,7 +12,7 @@ const emit = defineEmits<{
   deleted: []
 }>()
 const supabase = useSupabaseClient<Database>()
-const toast = useToast()
+const toast = useAppToast()
 const loading = ref(false)
 
 const isIncome = computed(() => props.transaction.type === 'Income')
@@ -37,18 +37,16 @@ const deleteTransaction = async () => {
   loading.value = false
 
   if (error) {
-    toast.add({
+    toast.error({
       title: 'Could not delete transaction',
-      description: error.message,
-      color: 'error'
+      description: error.message
     })
     return
   }
 
-  toast.add({
+  toast.success({
     title: 'Transaction deleted',
-    description: props.transaction.description ?? 'The selected transaction was removed.',
-    color: 'success'
+    description: props.transaction.description ?? 'The selected transaction was removed.'
   })
 
   emit('deleted')

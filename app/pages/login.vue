@@ -13,7 +13,7 @@ const state = ref<LoginFormState>({
 })
 
 const supabase = useSupabaseClient<Database>()
-const toast = useToast()
+const toast = useAppToast()
 const isLoading = ref(false)
 const submittedEmail = ref<string | null>(null)
 
@@ -40,10 +40,9 @@ async function submit() {
   } catch (error) {
     const description = error instanceof Error ? error.message : 'Could not send the login email.'
 
-    toast.add({
+    toast.error({
       title: 'Could not send login email',
-      description,
-      color: 'error'
+      description
     })
   } finally {
     isLoading.value = false

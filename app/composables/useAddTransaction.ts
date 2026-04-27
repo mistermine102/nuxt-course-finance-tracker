@@ -25,7 +25,7 @@ export async function addTransaction(
 
 export const useAddTransaction = (options: UseAddTransactionOptions = {}) => {
   const supabase = useSupabaseClient<Database>()
-  const toast = useToast()
+  const toast = useAppToast()
   const isLoading = ref(false)
 
   async function submitTransaction(transaction: TablesInsert<'Transactions'>) {
@@ -38,10 +38,7 @@ export const useAddTransaction = (options: UseAddTransactionOptions = {}) => {
 
       const createdTransaction = await addTransaction(supabase, transaction)
 
-      toast.add({
-        title: 'Transaction added!',
-        color: 'success'
-      })
+      toast.success('Transaction added!')
 
       await options.onSuccess?.()
 
@@ -49,10 +46,9 @@ export const useAddTransaction = (options: UseAddTransactionOptions = {}) => {
     } catch (error) {
       const description = error instanceof Error ? error.message : 'Could not add transaction.'
 
-      toast.add({
+      toast.error({
         title: 'Could not add transaction',
-        description,
-        color: 'error'
+        description
       })
 
       return null

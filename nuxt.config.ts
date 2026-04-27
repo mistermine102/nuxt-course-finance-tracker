@@ -5,6 +5,6 @@ export default defineNuxtConfig({
   modules: ['@nuxt/ui', '@nuxtjs/supabase'],
   css: ['~/app.css'],
   supabase: {
-    redirect: false
+    redirect: true
   }
 })
